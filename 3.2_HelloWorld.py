@@ -14,10 +14,13 @@
 # limitations under the License.
 # ==============================================================================
 from tensorflow.examples.tutorials.mnist import input_data
-mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
+mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)	# one_hot=[0,1,0,0]
 
+print("mnist.train.images.shape,mnist.train.labels.shape:")
 print(mnist.train.images.shape, mnist.train.labels.shape)
+print("mnist.test.images.shape,mnist.test.labels.shape:")
 print(mnist.test.images.shape, mnist.test.labels.shape)
+print("mnist.validation.images.shape,mnist.validation.labels.shape:")
 print(mnist.validation.images.shape, mnist.validation.labels.shape)
 
 import tensorflow as tf
@@ -41,7 +44,8 @@ for i in range(1000):
     train_step.run({x: batch_xs, y_: batch_ys})
 
 correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
+print("correct_prediction: ", correct_prediction)
 
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-
+print("Test accuracy: ")
 print(accuracy.eval({x: mnist.test.images, y_: mnist.test.labels}))
