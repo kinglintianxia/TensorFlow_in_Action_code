@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+import sys 
+sys.path.append("/home/king/Documents/models/tutorials/image/cifar10") # for cifa10,cifa10_input
 
 import cifar10,cifar10_input
 import tensorflow as tf
@@ -23,7 +25,7 @@ max_steps = 3000
 batch_size = 128
 data_dir = '/tmp/cifar10_data/cifar-10-batches-bin'
 
-
+# Return weight, get weight l2_loss
 def variable_with_weight_loss(shape, stddev, wl):
     var = tf.Variable(tf.truncated_normal(shape, stddev=stddev))
     if wl is not None:
@@ -79,7 +81,7 @@ conv1 = tf.nn.relu(tf.nn.bias_add(kernel1, bias1))
 pool1 = tf.nn.max_pool(conv1, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1],
                        padding='SAME')
 norm1 = tf.nn.lrn(pool1, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75)
-
+# norm1.shape: [batch_size, 12,12, 64]
 
 weight2 = variable_with_weight_loss(shape=[5, 5, 64, 64], stddev=5e-2, wl=0.0)
 kernel2 = tf.nn.conv2d(norm1, weight2, [1, 1, 1, 1], padding='SAME')
@@ -88,8 +90,11 @@ conv2 = tf.nn.relu(tf.nn.bias_add(kernel2, bias2))
 norm2 = tf.nn.lrn(conv2, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75)
 pool2 = tf.nn.max_pool(norm2, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1],
                        padding='SAME')
+# pool2.shape: [128, 6,6, 64]
 
+# reshape: [batch_size, 6*6*64] = [128, 2304]
 reshape = tf.reshape(pool2, [batch_size, -1])
+# dim = 2304
 dim = reshape.get_shape()[1].value
 weight3 = variable_with_weight_loss(shape=[dim, 384], stddev=0.04, wl=0.004)
 bias3 = tf.Variable(tf.constant(0.1, shape=[384]))
@@ -101,7 +106,7 @@ local4 = tf.nn.relu(tf.matmul(local3, weight4) + bias4)
 
 weight5 = variable_with_weight_loss(shape=[192, 10], stddev=1/192.0, wl=0.0)
 bias5 = tf.Variable(tf.constant(0.0, shape=[10]))
-logits = tf.add(tf.matmul(local4, weight5), bias5)
+logits = tf.add(tf.matmul(local4, weight5), bias5)  # y'
 
 loss = loss(logits, label_holder)
 
@@ -113,6 +118,7 @@ top_k_op = tf.nn.in_top_k(logits, label_holder, 1)
 sess = tf.InteractiveSession()
 tf.global_variables_initializer().run()
 
+# Start data augmentation 
 tf.train.start_queue_runners()
 ###
 for step in range(max_steps):

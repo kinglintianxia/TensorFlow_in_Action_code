@@ -39,7 +39,7 @@ import tensorflow as tf
 slim = tf.contrib.slim
 
 
-
+### Class Block
 class Block(collections.namedtuple('Block', ['scope', 'unit_fn', 'args'])):
   """A named tuple describing a ResNet block.
 
@@ -51,7 +51,7 @@ class Block(collections.namedtuple('Block', ['scope', 'unit_fn', 'args'])):
       contains one (depth, depth_bottleneck, stride) tuple for each unit in the
       block to serve as argument to unit_fn.
   """
-
+### End Class Block
 
 def subsample(inputs, factor, scope=None):
   """Subsamples the input along the spatial dimensions.
@@ -106,12 +106,15 @@ def conv2d_same(inputs, num_outputs, kernel_size, stride, scope=None):
       the convolution output.
   """
   if stride == 1:
+    # slim.conv2d(tensor, output_channel, kernel_size, stride, padding, scope)
     return slim.conv2d(inputs, num_outputs, kernel_size, stride=1,
                        padding='SAME', scope=scope)
   else:
     #kernel_size_effective = kernel_size + (kernel_size - 1) * (rate - 1)
     pad_total = kernel_size - 1
-    pad_beg = pad_total // 2
+    # up & down
+    pad_beg = pad_total // 2  # " // "表示整数除法
+    # left & right
     pad_end = pad_total - pad_beg
     inputs = tf.pad(inputs,
                     [[0, 0], [pad_beg, pad_end], [pad_beg, pad_end], [0, 0]])
@@ -119,7 +122,7 @@ def conv2d_same(inputs, num_outputs, kernel_size, stride, scope=None):
                        padding='VALID', scope=scope)
 
 
-@slim.add_arg_scope
+@slim.add_arg_scope # for use with slim.arg_scope
 def stack_blocks_dense(net, blocks,
                        outputs_collections=None):
   """Stacks ResNet `Blocks` and controls output feature density.
@@ -152,7 +155,7 @@ def stack_blocks_dense(net, blocks,
       
   return net
 
-
+# Set default args
 def resnet_arg_scope(is_training=True,
                      weight_decay=0.0001,
                      batch_norm_decay=0.997,
@@ -179,6 +182,7 @@ def resnet_arg_scope(is_training=True,
   Returns:
     An `arg_scope` to use for the resnet models.
   """
+  # dict
   batch_norm_params = {
       'is_training': is_training,
       'decay': batch_norm_decay,
@@ -207,7 +211,7 @@ def resnet_arg_scope(is_training=True,
 
 
 
-@slim.add_arg_scope
+@slim.add_arg_scope  # for use "with slim.arg_scope"
 def bottleneck(inputs, depth, depth_bottleneck, stride,
                outputs_collections=None, scope=None):
   """Bottleneck residual unit variant with BN before convolutions.
@@ -233,15 +237,18 @@ def bottleneck(inputs, depth, depth_bottleneck, stride,
     The ResNet unit's output.
   """
   with tf.variable_scope(scope, 'bottleneck_v2', [inputs]) as sc:
+    # channel: 3
     depth_in = slim.utils.last_dimension(inputs.get_shape(), min_rank=4)
+    # Preactivate
     preact = slim.batch_norm(inputs, activation_fn=tf.nn.relu, scope='preact')
-    if depth == depth_in:
+    if depth == depth_in: # only fit the image size
       shortcut = subsample(inputs, stride, 'shortcut')
-    else:
+    else: # fit 
+      # slim.conv2d(tensor, output_channel, kernel_size, stride, padding, scope)
       shortcut = slim.conv2d(preact, depth, [1, 1], stride=stride,
                              normalizer_fn=None, activation_fn=None,
                              scope='shortcut')
-
+    # 1*1 -> 3*3 -> 1*1 
     residual = slim.conv2d(preact, depth_bottleneck, [1, 1], stride=1,
                            scope='conv1')
     residual = conv2d_same(residual, depth_bottleneck, 3, stride,
@@ -330,7 +337,7 @@ def resnet_v2(inputs,
       return net, end_points
 
 
-
+# 3->4->6->3
 def resnet_v2_50(inputs,
                  num_classes=None,
                  global_pool=True,
@@ -338,6 +345,7 @@ def resnet_v2_50(inputs,
                  scope='resnet_v2_50'):
   """ResNet-50 model of [1]. See resnet_v2() for arg and return description."""
   blocks = [
+      # (256, 64, 1) => (out_depth, depth_bottle, stride)
       Block('block1', bottleneck, [(256, 64, 1)] * 2 + [(256, 64, 2)]),
       Block(
           'block2', bottleneck, [(512, 128, 1)] * 3 + [(512, 128, 2)]),
@@ -348,7 +356,7 @@ def resnet_v2_50(inputs,
   return resnet_v2(inputs, blocks, num_classes, global_pool,
                    include_root_block=True, reuse=reuse, scope=scope)
 
-
+# 3->4->23->3
 def resnet_v2_101(inputs,
                   num_classes=None,
                   global_pool=True,
@@ -367,7 +375,7 @@ def resnet_v2_101(inputs,
   return resnet_v2(inputs, blocks, num_classes, global_pool,
                    include_root_block=True, reuse=reuse, scope=scope)
 
-
+# 3->8->36->3
 def resnet_v2_152(inputs,
                   num_classes=None,
                   global_pool=True,
@@ -386,7 +394,7 @@ def resnet_v2_152(inputs,
   return resnet_v2(inputs, blocks, num_classes, global_pool,
                    include_root_block=True, reuse=reuse, scope=scope)
 
-
+# 3->24->36->3
 def resnet_v2_200(inputs,
                   num_classes=None,
                   global_pool=True,
@@ -409,6 +417,7 @@ def resnet_v2_200(inputs,
 from datetime import datetime
 import math
 import time
+
 def time_tensorflow_run(session, target, info_string):
     num_steps_burn_in = 10
     total_duration = 0.0
@@ -429,7 +438,7 @@ def time_tensorflow_run(session, target, info_string):
     print ('%s: %s across %d steps, %.3f +/- %.3f sec / batch' %
            (datetime.now(), info_string, num_batches, mn, sd))
     
-batch_size = 32
+batch_size = 5  # 32
 height, width = 224, 224
 inputs = tf.random_uniform((batch_size, height, width, 3))
 with slim.arg_scope(resnet_arg_scope(is_training=False)):

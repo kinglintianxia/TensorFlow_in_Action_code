@@ -18,6 +18,7 @@ import math
 import time
 import tensorflow as tf
 
+# Conv layer
 def conv_op(input_op, name, kh, kw, n_out, dh, dw, p):
     n_in = input_op.get_shape()[-1].value
 
@@ -33,7 +34,7 @@ def conv_op(input_op, name, kh, kw, n_out, dh, dw, p):
         activation = tf.nn.relu(z, name=scope)
         p += [kernel, biases]
         return activation
-
+# FC layer
 def fc_op(input_op, name, n_out, p):
     n_in = input_op.get_shape()[-1].value
 
@@ -46,7 +47,7 @@ def fc_op(input_op, name, n_out, p):
         activation = tf.nn.relu_layer(input_op, kernel, biases, name=scope)
         p += [kernel, biases]
         return activation
-
+# Max pool
 def mpool_op(input_op, name, kh, kw, dh, dw):
     return tf.nn.max_pool(input_op,
                           ksize=[1, kh, kw, 1],
@@ -89,6 +90,7 @@ def inference_op(input_op, keep_prob):
 
     # flatten
     shp = pool5.get_shape()
+    # 7*7*512 = 20588
     flattened_shape = shp[1].value * shp[2].value * shp[3].value
     resh1 = tf.reshape(pool5, [-1, flattened_shape], name="resh1")
 
@@ -154,7 +156,7 @@ def run_benchmark():
         grad = tf.gradients(objective, p)
         time_tensorflow_run(sess, grad, {keep_prob:0.5}, "Forward-backward")
 
-batch_size=32
+batch_size=5
 num_batches=100
 run_benchmark()
 

@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-from datetime import datetime
+from datetime import datetime   # yymmdd
 import math
 import time
 import tensorflow as tf
@@ -22,10 +22,11 @@ import tensorflow as tf
 batch_size=32
 num_batches=100
 
+# Show net shape
 def print_activations(t):
     print(t.op.name, ' ', t.get_shape().as_list())
 
-
+# Conv Net
 def inference(images):
     parameters = []
     # conv1
@@ -41,12 +42,12 @@ def inference(images):
         parameters += [kernel, biases]
 
 
-  # pool1
+  # lrn + pool1
     lrn1 = tf.nn.lrn(conv1, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75, name='lrn1')
-    pool1 = tf.nn.max_pool(lrn1,
+    pool1 = tf.nn.max_pool(lrn1,    # overlap pooling
                            ksize=[1, 3, 3, 1],
                            strides=[1, 2, 2, 1],
-                           padding='VALID',
+                           padding='VALID', # No padding
                            name='pool1')
     print_activations(pool1)
 
@@ -67,7 +68,7 @@ def inference(images):
     pool2 = tf.nn.max_pool(lrn2,
                            ksize=[1, 3, 3, 1],
                            strides=[1, 2, 2, 1],
-                           padding='VALID',
+                           padding='VALID', # No padding
                            name='pool2')
     print_activations(pool2)
 
@@ -140,13 +141,13 @@ def time_tensorflow_run(session, target, info_string):
         _ = session.run(target)
         duration = time.time() - start_time
         if i >= num_steps_burn_in:
-            if not i % 10:
+            if not i % 10:  # if i%10 == 0
                 print ('%s: step %d, duration = %.3f' %
                        (datetime.now(), i - num_steps_burn_in, duration))
             total_duration += duration
             total_duration_squared += duration * duration
     mn = total_duration / num_batches
-    vr = total_duration_squared / num_batches - mn * mn
+    vr = total_duration_squared / num_batches - mn * mn # D(t) = E(t2)-(E(t))2 => vr = t2/n-(t/n)2
     sd = math.sqrt(vr)
     print ('%s: %s across %d steps, %.3f +/- %.3f sec / batch' %
            (datetime.now(), info_string, num_batches, mn, sd))

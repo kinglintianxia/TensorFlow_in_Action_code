@@ -18,7 +18,9 @@ import tensorflow as tf
 slim = tf.contrib.slim
 trunc_normal = lambda stddev: tf.truncated_normal_initializer(0.0, stddev)
 
-
+# Conv nets of v3
+# inputs: input images
+# scope: "InceptionV3"
 def inception_v3_base(inputs, scope=None):
 
   end_points = {}
@@ -26,9 +28,11 @@ def inception_v3_base(inputs, scope=None):
   with tf.variable_scope(scope, 'InceptionV3', [inputs]):
     with slim.arg_scope([slim.conv2d, slim.max_pool2d, slim.avg_pool2d],
                         stride=1, padding='VALID'):
-      # 299 x 299 x 3
+      # input:299 x 299 x 3
+      # slim.conv2d(tensor, output_channel, kernel_size, stride, padding, scope)
       net = slim.conv2d(inputs, 32, [3, 3], stride=2, scope='Conv2d_1a_3x3')
       # 149 x 149 x 32
+      # stride=1, padding='VALID'
       net = slim.conv2d(net, 32, [3, 3], scope='Conv2d_2a_3x3')
       # 147 x 147 x 32
       net = slim.conv2d(net, 64, [3, 3], padding='SAME', scope='Conv2d_2b_3x3')
@@ -46,6 +50,14 @@ def inception_v3_base(inputs, scope=None):
     with slim.arg_scope([slim.conv2d, slim.max_pool2d, slim.avg_pool2d],
                         stride=1, padding='SAME'):
       # mixed: 35 x 35 x 256.
+      #     tf.concat(64+64+96+32=256)
+      #    /  |    |    \
+      #   /   |   3*3    \
+      #  /   5*5  3*3    1*1
+      # 1*1  1*1  1*1  pool(3*3)
+      #   \   \    /    /
+      #    \   \  /    / 
+      #         net
       with tf.variable_scope('Mixed_5b'):
         with tf.variable_scope('Branch_0'):
           branch_0 = slim.conv2d(net, 64, [1, 1], scope='Conv2d_0a_1x1')
@@ -59,9 +71,20 @@ def inception_v3_base(inputs, scope=None):
         with tf.variable_scope('Branch_3'):
           branch_3 = slim.avg_pool2d(net, [3, 3], scope='AvgPool_0a_3x3')
           branch_3 = slim.conv2d(branch_3, 32, [1, 1], scope='Conv2d_0b_1x1')
+        # net = [batch_size, height, width, channel]
+        # net = [batch_size, 35, 35, 256]
+        # concat in channel, it stacks the feature maps
         net = tf.concat([branch_0, branch_1, branch_2, branch_3], 3)
 
       # mixed_1: 35 x 35 x 288.
+      #     tf.concat(64+64+96+64=288)
+      #    /  |    |    \
+      #   /   |   3*3    \
+      #  /   5*5  3*3    1*1
+      # 1*1  1*1  1*1  pool(3*3)
+      #   \   \    /    /
+      #    \   \  /    / 
+      #         net
       with tf.variable_scope('Mixed_5c'):
         with tf.variable_scope('Branch_0'):
           branch_0 = slim.conv2d(net, 64, [1, 1], scope='Conv2d_0a_1x1')
@@ -78,6 +101,14 @@ def inception_v3_base(inputs, scope=None):
         net = tf.concat([branch_0, branch_1, branch_2, branch_3], 3)
 
       # mixed_2: 35 x 35 x 288.
+      #     tf.concat(64+64+96+64=288)
+      #    /  |    |    \
+      #   /   |   3*3    \
+      #  /   5*5  3*3    1*1
+      # 1*1  1*1  1*1  pool(3*3)
+      #   \   \    /    /
+      #    \   \  /    / 
+      #         net
       with tf.variable_scope('Mixed_5d'):
         with tf.variable_scope('Branch_0'):
           branch_0 = slim.conv2d(net, 64, [1, 1], scope='Conv2d_0a_1x1')
@@ -94,8 +125,17 @@ def inception_v3_base(inputs, scope=None):
         net = tf.concat([branch_0, branch_1, branch_2, branch_3], 3)
 
       # mixed_3: 17 x 17 x 768.
+      #     tf.concat(384+96+288=768)
+      #    /     |    \
+      #   /     3*3    \
+      #  /      3*3     \
+      # 3*3     1*1  pool(3*3)
+      #   \      |     /
+      #    \     |    / 
+      #         net
       with tf.variable_scope('Mixed_6a'):
         with tf.variable_scope('Branch_0'):
+          # (35-3)/2+1=17
           branch_0 = slim.conv2d(net, 384, [3, 3], stride=2,
                                  padding='VALID', scope='Conv2d_1a_1x1')
         with tf.variable_scope('Branch_1'):
@@ -109,6 +149,16 @@ def inception_v3_base(inputs, scope=None):
         net = tf.concat([branch_0, branch_1, branch_2], 3)
 
       # mixed4: 17 x 17 x 768.
+      #     tf.concat(192+192+192+192=768)
+      #      / |  \
+      #     / 1*7  \
+      #    /  7*1   \
+      #   /   7*1    \
+      #  /    1*7    1*1
+      # 1*1   1*1  pool(3*3)
+      #   \    |    /    
+      #    \   |   /     
+      #       net
       with tf.variable_scope('Mixed_6b'):
         with tf.variable_scope('Branch_0'):
           branch_0 = slim.conv2d(net, 192, [1, 1], scope='Conv2d_0a_1x1')
@@ -128,6 +178,15 @@ def inception_v3_base(inputs, scope=None):
         net = tf.concat([branch_0, branch_1, branch_2, branch_3], 3)
 
       # mixed_5: 17 x 17 x 768.
+      #     tf.concat(192+192+192+192=768)
+      #     / |   1*7  \ 
+      #    /  |   7*1   \
+      #   /  7*1  1*7    \
+      #  /   1*7  7*1    1*1
+      # 1*1  1*1  1*1  pool(3*3)
+      #   \   \    /    /
+      #    \   \  /    / 
+      #         net
       with tf.variable_scope('Mixed_6c'):
         with tf.variable_scope('Branch_0'):
           branch_0 = slim.conv2d(net, 192, [1, 1], scope='Conv2d_0a_1x1')
@@ -146,6 +205,15 @@ def inception_v3_base(inputs, scope=None):
           branch_3 = slim.conv2d(branch_3, 192, [1, 1], scope='Conv2d_0b_1x1')
         net = tf.concat([branch_0, branch_1, branch_2, branch_3], 3)
       # mixed_6: 17 x 17 x 768.
+      #     tf.concat(192+192+192+192=768)
+      #     / |   1*7  \ 
+      #    /  |   7*1   \
+      #   /  7*1  1*7    \
+      #  /   1*7  7*1    1*1
+      # 1*1  1*1  1*1  pool(3*3)
+      #   \   \    /    /
+      #    \   \  /    / 
+      #         net
       with tf.variable_scope('Mixed_6d'):
         with tf.variable_scope('Branch_0'):
           branch_0 = slim.conv2d(net, 192, [1, 1], scope='Conv2d_0a_1x1')
@@ -165,6 +233,15 @@ def inception_v3_base(inputs, scope=None):
         net = tf.concat([branch_0, branch_1, branch_2, branch_3], 3)
 
       # mixed_7: 17 x 17 x 768.
+      #     tf.concat(192+192+192+192=768)
+      #     / |   1*7  \ 
+      #    /  |   7*1   \
+      #   /  7*1  1*7    \
+      #  /   1*7  7*1    1*1
+      # 1*1  1*1  1*1  pool(3*3)
+      #   \   \    /    /
+      #    \   \  /    / 
+      #         net
       with tf.variable_scope('Mixed_6e'):
         with tf.variable_scope('Branch_0'):
           branch_0 = slim.conv2d(net, 192, [1, 1], scope='Conv2d_0a_1x1')
@@ -185,6 +262,16 @@ def inception_v3_base(inputs, scope=None):
       end_points['Mixed_6e'] = net
 
       # mixed_8: 8 x 8 x 1280.
+      #    tf.concat(320+192+768=1280)
+      #      / |  \
+      #     /  |   \
+      #    /  3*3   \
+      #   /   7*1    \
+      # 3*3   1*7     \
+      # 1*1   1*1  pool(3*3)
+      #   \    |    /    
+      #    \   |   /     
+      #       net
       with tf.variable_scope('Mixed_7a'):
         with tf.variable_scope('Branch_0'):
           branch_0 = slim.conv2d(net, 192, [1, 1], scope='Conv2d_0a_1x1')
@@ -201,6 +288,16 @@ def inception_v3_base(inputs, scope=None):
                                      scope='MaxPool_1a_3x3')
         net = tf.concat([branch_0, branch_1, branch_2], 3)
       # mixed_9: 8 x 8 x 2048.
+      #   tf.concat(320+768+768+192=2048)
+      #      /  |       |    \
+      #     / concat  concat  \ 
+      #    /  /   \   /   \    \
+      #   /  1*3 3*1 1*3 3*1    \
+      #  /    \  /    \  /    1*1
+      # 1*1    1*1    1*1  pool(3*3)
+      #   \     \    /    /
+      #    \     \  /    / 
+      #           net
       with tf.variable_scope('Mixed_7b'):
         with tf.variable_scope('Branch_0'):
           branch_0 = slim.conv2d(net, 320, [1, 1], scope='Conv2d_0a_1x1')
@@ -223,6 +320,16 @@ def inception_v3_base(inputs, scope=None):
         net = tf.concat([branch_0, branch_1, branch_2, branch_3], 3)
 
       # mixed_10: 8 x 8 x 2048.
+      #   tf.concat(320+768+768+192=2048)
+      #      /  |       |    \
+      #     / concat  concat  \ 
+      #    /  /   \   /   \    \
+      #   /  1*3 3*1 1*3 3*1    \
+      #  /    \  /    \  /    1*1
+      # 1*1    1*1    1*1  pool(3*3)
+      #   \     \    /    /
+      #    \     \  /    / 
+      #           net
       with tf.variable_scope('Mixed_7c'):
         with tf.variable_scope('Branch_0'):
           branch_0 = slim.conv2d(net, 320, [1, 1], scope='Conv2d_0a_1x1')
@@ -245,7 +352,8 @@ def inception_v3_base(inputs, scope=None):
         net = tf.concat([branch_0, branch_1, branch_2, branch_3], 3)
       return net, end_points
 
-
+# inputs: input images
+# spatial_squeeze: [1,1,1000] => [1000]
 def inception_v3(inputs,
                  num_classes=1000,
                  is_training=True,
@@ -259,6 +367,7 @@ def inception_v3(inputs,
                          reuse=reuse) as scope:
     with slim.arg_scope([slim.batch_norm, slim.dropout],
                         is_training=is_training):
+      # Get the whole conv networks & important nodes
       net, end_points = inception_v3_base(inputs, scope=scope)
 
       # Auxiliary Head logits
@@ -299,14 +408,15 @@ def inception_v3(inputs,
           logits = tf.squeeze(logits, [1, 2], name='SpatialSqueeze')
         # 1000
       end_points['Logits'] = logits
+      # prediction_fn=slim.softmax
       end_points['Predictions'] = prediction_fn(logits, scope='Predictions')
   return logits, end_points
 
-
+# Set default param
 def inception_v3_arg_scope(weight_decay=0.00004,
                            stddev=0.1,
                            batch_norm_var_collection='moving_vars'):
-
+    
   batch_norm_params = {
       'decay': 0.9997,
       'epsilon': 0.001,
@@ -319,6 +429,10 @@ def inception_v3_arg_scope(weight_decay=0.00004,
       }
   }
 
+  # CSDN blog https://blog.csdn.net/zj360202/article/details/78590285
+  # arg_scope(list_ops_or_scope,**kwargs)
+  # list_ops_or_scope: 操作列表或作用域列表
+  # kwargs: 参数，以keyword=value方式显示
   with slim.arg_scope([slim.conv2d, slim.fully_connected],
                       weights_regularizer=slim.l2_regularizer(weight_decay)):
     with slim.arg_scope(
@@ -327,12 +441,14 @@ def inception_v3_arg_scope(weight_decay=0.00004,
         activation_fn=tf.nn.relu,
         normalizer_fn=slim.batch_norm,
         normalizer_params=batch_norm_params) as sc:
-      return sc
+      return sc   # return scope
 
   
 from datetime import datetime
 import math
 import time
+
+# TF run & get the time used 
 def time_tensorflow_run(session, target, info_string):
     num_steps_burn_in = 10
     total_duration = 0.0
@@ -353,7 +469,7 @@ def time_tensorflow_run(session, target, info_string):
     print ('%s: %s across %d steps, %.3f +/- %.3f sec / batch' %
            (datetime.now(), info_string, num_batches, mn, sd))
     
-batch_size = 32
+batch_size = 5
 height, width = 299, 299
 inputs = tf.random_uniform((batch_size, height, width, 3))
 with slim.arg_scope(inception_v3_arg_scope()):
