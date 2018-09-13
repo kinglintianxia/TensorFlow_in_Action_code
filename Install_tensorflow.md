@@ -1,10 +1,10 @@
 # Install TensorFlow
 ---
-##0 Ubuntu Reverting to a Previous Kernel 4.4.0 
-**Problem:**
+## 0 Ubuntu Reverting to a Previous Kernel 4.4.0 
+* **Problem:**
 > The driver installation is unable to locate the kernel source. when install cuda->nvidia drivers
 > See follow CUDA_Installation_Guide_Linux.pdf `Table1.Native Linux Distribution Support in CUDA9.0 for details.
-**Solution:**
+* **Solution:**
 > Reverting from 4.15 to 4.4
 ```shell
 $ uname -r
@@ -30,7 +30,7 @@ $ sudo update-grub
 ```
 Done!
 
-##1 install cuda9.0 on ubuntu 16.04
+## 1 install cuda9.0 on ubuntu 16.04
 * follow CUDA_Installation_Guide_Linux.pdf
 * **NO OpenGL, NO xorg.conf**
 * add follow two lines to ~/.bashr
@@ -39,7 +39,7 @@ export PATH=/usr/local/cuda-9.0/bin${PATH:+:${PATH}}
 export LD_LIBRARY_PATH=/usr/local/cuda-9.0/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} 
 ```
 
-##2 install cudnn
+## 2 install cudnn
 * [download link](https://developer.nvidia.com/rdp/cudnn-download)
 * version: cuDNN v7.1.2 Library for Linux
 ```shell
@@ -52,8 +52,8 @@ $ sudo ln -s libcudnn.so.7 libcudnn.so  #生成软链接
 $ sudo vim /etc/ld.so.conf.d/cuda.conf
 >/usr/local/cuda/lib64
 ```
-##4 TensorFlow
-* [TensorFlow](https://www.tensorflow.org/install/install_linux)
+## 4 TensorFlow
+* [TensorFlow_link](https://www.tensorflow.org/install/install_linux)
 * Choose `Use pip in your system environment`
 ```shell
 $ python -V  # or: python3 -V
@@ -62,8 +62,8 @@ $ sudo apt-get install python-pip python-dev   # for Python 2.7
 $ sudo apt-get install python3-pip python3-dev # for Python 3.n
 $ pip install --upgrade pip
 ```
-**Problem**
-pip error ocured!
+* **Problem**:
+* pip error ocured!
 > Import Error:cannot import name main
 **Solution**
 ```shell
@@ -90,6 +90,6 @@ $ pip3 install --upgrade --user tensorflow-gpu  # Python 3.n
 ```shell
 $ python -c "import tensorflow as tf; print(tf.__version__)"
 ```
-And it will print `1.10.1`
-**Done!**
+And it will print `1.10.1`.
+* **Done!**
 
