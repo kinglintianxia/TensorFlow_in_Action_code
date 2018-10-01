@@ -1,5 +1,16 @@
 # Install TensorFlow
 ---
+## update 2018.10.01
+## 0. Install Nvidia driver first.
+[driver](https://www.geforce.cn/drivers)
+* follow CUDA_Installation_Guide_Linux.pdf disable `Disabling Nouveau` & `x server`.
+```shell
+$ sudo ./NVIDIA-Linux-x86_64-390.87.run -no-x-check -no-nouveau-check -no-opengl-files
+```
+(1):报错the distribution-providedpre-install script failed!不必理会，继续安装。
+(2):提示32位兼容问题，不用理会。
+(3):安装时选择不启用Nvidia Xorg.conf服务
+
 ## 0. Ubuntu Reverting to a Previous Kernel 4.4.0 
 * **Problem:**
 > The driver installation is unable to locate the kernel source. when install cuda->nvidia drivers
