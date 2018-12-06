@@ -1,4 +1,9 @@
 # TensorFlow in Action code 
+# Anaconda3 install
+```shell
+$ conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/
+$ conda config --set show_channel_urls yes
+
 ## start tensorflow
 ```shell
 $ source activate tensorflow
